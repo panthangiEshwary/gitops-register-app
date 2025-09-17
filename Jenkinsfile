@@ -1,41 +1,20 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.9.2-openjdk-21'   // Maven + JDK image
-            args '-v /var/run/docker.sock:/var/run/docker.sock'  // allow Docker
+            image 'maven:3.9.2-jdk-21'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
     environment {
         APP_NAME = "register-app-pipeline"
-        IMAGE_TAG = "1.0.${BUILD_NUMBER}"   // dynamic version from Jenkins build number
-        DOCKERHUB_CREDENTIALS = "dockerhub" // Jenkins credentials ID for Docker Hub
+        IMAGE_TAG = "1.0.${BUILD_NUMBER}"
+        DOCKERHUB_CREDENTIALS = "dockerhub"
     }
-
     stages {
-        stage("Cleanup Workspace") {
-            steps {
-                cleanWs()
-            }
-        }
-
-        stage("Checkout App Repo") {
-            steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/register-app.git'
-            }
-        }
-
-        stage("Build Java App") {
-            steps {
-                sh "mvn clean install -DskipTests"
-            }
-        }
-
-        stage("Build Docker Image") {
-            steps {
-                sh "docker build -t panthangi/${APP_NAME}:${IMAGE_TAG} ."
-            }
-        }
-
+        stage("Cleanup Workspace") { steps { cleanWs() } }
+        stage("Checkout App Repo") { steps { git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/register-app.git' } }
+        stage("Build Java App") { steps { sh "mvn clean install -DskipTests" } }
+        stage("Build Docker Image") { steps { sh "docker build -t panthangi/${APP_NAME}:${IMAGE_TAG} ." } }
         stage("Push Docker Image") {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: "DOCKER_USER", passwordVariable: "DOCKER_PASS")]) {
@@ -47,13 +26,7 @@ pipeline {
                 }
             }
         }
-
-        stage("Checkout GitOps Repo") {
-            steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/gitops-register-app.git'
-            }
-        }
-
+        stage("Checkout GitOps Repo") { steps { git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/gitops-register-app.git' } }
         stage("Update the Deployment Tags") {
             steps {
                 sh """
@@ -62,7 +35,6 @@ pipeline {
                 """
             }
         }
-
         stage("Push the changed deployment file to GitOps Repo") {
             steps {
                 sh """
