@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-21'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
     environment {
         APP_NAME = "register-app-pipeline"
         IMAGE_TAG = "1.0.${BUILD_NUMBER}"
@@ -27,7 +22,7 @@ pipeline {
             }
         }
         stage("Checkout GitOps Repo") { steps { git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/gitops-register-app.git' } }
-        stage("Update the Deployment Tags") {
+        stage("Update Deployment Tags") {
             steps {
                 sh """
                    sed -i 's#image: panthangi/${APP_NAME}:.*#image: panthangi/${APP_NAME}:${IMAGE_TAG}#' deployment.yaml
@@ -35,7 +30,7 @@ pipeline {
                 """
             }
         }
-        stage("Push the changed deployment file to GitOps Repo") {
+        stage("Push Deployment Changes") {
             steps {
                 sh """
                    git config --global user.name "Eshwary"
