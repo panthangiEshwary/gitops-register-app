@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'maven:3.9.2-openjdk-21'   // Maven + JDK image
+            args '-v /var/run/docker.sock:/var/run/docker.sock'  // allow Docker
+        }
+    }
     environment {
         APP_NAME = "register-app-pipeline"
         IMAGE_TAG = "1.0.${BUILD_NUMBER}"   // dynamic version from Jenkins build number
