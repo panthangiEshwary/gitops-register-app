@@ -1,10 +1,11 @@
 pipeline {
+    pipeline {
     agent {
-    docker {
-        image 'maven:3.9.2-openjdk-21'
-        args '-v /var/run/docker.sock:/var/run/docker.sock'
+        docker {
+            image 'maven:3.9.6-sapmachine-21-jammy'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
-}
 
     environment {
         APP_NAME = "register-app-pipeline"
