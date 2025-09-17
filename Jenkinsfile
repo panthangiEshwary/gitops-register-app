@@ -1,11 +1,10 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.9.6-sapmachine-21-jammy'
+            image 'maven:3.9.6-openjdk-21'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
-
     environment {
         APP_NAME = "register-app-pipeline"
         IMAGE_TAG = "1.0.${BUILD_NUMBER}"
@@ -49,3 +48,4 @@ pipeline {
         }
     }
 }
+
