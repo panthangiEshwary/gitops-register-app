@@ -1,12 +1,8 @@
 pipeline {
-    agent any
-
+    agent { label "Jenkins-Agent" }
     environment {
         APP_NAME = "register-app-pipeline"
-        IMAGE_TAG = "1.0.${BUILD_NUMBER}"
-        DOCKERHUB_CREDENTIALS = "dockerhub"     // DockerHub creds in Jenkins
-        GITOPS_REPO = "https://github.com/panthangiEshwary/gitops-register-app.git"
-        GITHUB_CREDENTIALS = "github"           // GitHub PAT creds in Jenkins
+        IMAGE_TAG = "${BUILD_NUMBER}" // or pass from CI pipeline
     }
 
     stages {
@@ -16,77 +12,42 @@ pipeline {
             }
         }
 
-        stage("Checkout App Repo") {
+        stage("Checkout from SCM") {
             steps {
-                git branch: 'main',
-                    credentialsId: 'github',
-                    url: 'https://github.com/panthangiEshwary/register-app.git'
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/gitops-register-app.git'
             }
         }
 
-        stage("Build Java App") {
+        stage("Update the Deployment Tags") {
             steps {
-                sh "mvn clean install -DskipTests"
+                sh """
+                   echo "Before update:"
+                   cat deployment.yaml
+                   sed -i "s|image: ${APP_NAME}:.*|image: ${APP_NAME}:${IMAGE_TAG}|g" deployment.yaml
+                   echo "After update:"
+                   cat deployment.yaml
+                """
             }
         }
 
-        stage("Build Docker Image") {
+        stage("Push the changed deployment file to Git") {
             steps {
-                sh "docker build -t panthangi/${APP_NAME}:${IMAGE_TAG} ./webapp"
-            }
-        }
-
-        stage("Push Docker Image") {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}",
-                                                 usernameVariable: "DOCKER_USER",
-                                                 passwordVariable: "DOCKER_PASS")]) {
-                    sh """
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push panthangi/${APP_NAME}:${IMAGE_TAG}
-                        docker logout
-                    """
+                sh """
+                   git config --global user.name "Eshwary"
+                   git config --global user.email "Eshwary@gmail.com"
+                   git add deployment.yaml
+                   git commit -m "Updated Deployment Manifest with ${IMAGE_TAG}" || echo "No changes to commit"
+                """
+                withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                    sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/panthangiEshwary/gitops-register-app.git main"
                 }
             }
         }
 
-        stage("Checkout GitOps Repo") {
+        stage("Deploy to Kubernetes") {
             steps {
-                dir("gitops") {
-                    git branch: 'main',
-                        credentialsId: "${GITHUB_CREDENTIALS}",
-                        url: "${GITOPS_REPO}"
-                }
-            }
-        }
-
-        stage("Update Deployment Tags") {
-            steps {
-                dir("gitops") {
-                    sh """
-                       sed -i 's#image: panthangi/${APP_NAME}:.*#image: panthangi/${APP_NAME}:${IMAGE_TAG}#' deployment.yaml
-                       cat deployment.yaml
-                    """
-                }
-            }
-        }
-
-        stage("Push Deployment Changes") {
-            steps {
-                dir("gitops") {
-                    sh """
-                       git config user.name "Eshwary"
-                       git config user.email "Eshwary@gmail.com"
-                       git add deployment.yaml
-                       git commit -m "Updated Deployment to ${IMAGE_TAG}" || echo "No changes to commit"
-                    """
-                    withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS}",
-                                                     usernameVariable: "GIT_USER",
-                                                     passwordVariable: "GIT_TOKEN")]) {
-                        sh """
-                           git push https://${GIT_USER}:${GIT_TOKEN}@github.com/panthangiEshwary/gitops-register-app.git main
-                        """
-                    }
+                withKubeConfig([credentialsId: 'kubeconfig-id']) {
+                    sh "kubectl apply -f deployment.yaml"
                 }
             }
         }
