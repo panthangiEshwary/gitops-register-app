@@ -1,14 +1,14 @@
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority: /var/jenkins_home/workspace/gitops-register-app-cd/minikube-ca.crt
-    server: https://172.17.0.1:32771
+    certificate-authority: /var/jenkins_home/minikube/ca.crt
+    server: https://192.168.49.2:8443
   name: minikube
 contexts:
 - context:
     cluster: minikube
-    namespace: default
     user: minikube
+    namespace: default
   name: minikube
 current-context: minikube
 kind: Config
@@ -16,6 +16,6 @@ preferences: {}
 users:
 - name: minikube
   user:
-    client-certificate: /var/jenkins_home/workspace/gitops-register-app-cd/client.crt
-    client-key: /var/jenkins_home/workspace/gitops-register-app-cd/client.key
+    client-certificate: /var/jenkins_home/minikube/client.crt
+    client-key: /var/jenkins_home/minikube/client.key
 
