@@ -1,35 +1,25 @@
 pipeline {
-    agent { label "Jenkins-Agent" }
+    agent any   // Use any available node
+
     environment {
         APP_NAME = "register-app-pipeline"
-        IMAGE_TAG = "${BUILD_NUMBER}" // or pass from CI pipeline
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
-        stage("Cleanup Workspace") {
-            steps {
-                cleanWs()
-            }
-        }
-
+        stage("Cleanup Workspace") { steps { cleanWs() } }
         stage("Checkout from SCM") {
             steps {
                 git branch: 'main', credentialsId: 'github', url: 'https://github.com/panthangiEshwary/gitops-register-app.git'
             }
         }
-
         stage("Update the Deployment Tags") {
             steps {
                 sh """
-                   echo "Before update:"
-                   cat deployment.yaml
                    sed -i "s|image: ${APP_NAME}:.*|image: ${APP_NAME}:${IMAGE_TAG}|g" deployment.yaml
-                   echo "After update:"
-                   cat deployment.yaml
                 """
             }
         }
-
         stage("Push the changed deployment file to Git") {
             steps {
                 sh """
@@ -43,7 +33,6 @@ pipeline {
                 }
             }
         }
-
         stage("Deploy to Kubernetes") {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-id']) {
