@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/panthangiEshwary/gitops-register-app.git'
     targetRevision: HEAD
-    path: '.'   # manifests are in root of gitops repo
+    path: 'manifests'   # points to the new folder
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: default
