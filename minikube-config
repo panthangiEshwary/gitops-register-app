@@ -2,7 +2,7 @@ apiVersion: v1
 clusters:
 - cluster:
     certificate-authority: /var/jenkins_home/workspace/gitops-register-app-cd/minikube-ca.crt
-    server: https://127.0.0.1:32771
+    server: https://172.17.0.1:32771
   name: minikube
 contexts:
 - context:
